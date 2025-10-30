@@ -23,32 +23,31 @@ ZotWatcher 是一个基于 Zotero 数据构建个人兴趣画像，并持续监�
 
 
 ## GitHub Actions 部署
-1. **初始化 Git 仓库**
+1. **开启 Git**
    ```bash
    git init
    git add .
    git commit -m "Initial ZotWatcher setup"
-   git branch -M main
    git remote add origin <your-github-repo-url>
    git push -u origin main
    ```
 
 2. **配置 Secrets**（仓库 Settings → Secrets and variables → Actions）
-   - `ZOTERO_API_KEY`：您的 Zotero API 密钥
-   - `ZOTERO_USER_ID`：您的 Zotero 用户 ID
-   - （可选）`ALTMETRIC_KEY`、`OPENALEX_MAILTO`、`CROSSREF_MAILTO`
+   - `ZOTERO_API_KEY`
+   - `ZOTERO_USER_ID`
+   - （可选）`ALTMETRIC_KEY` 等
 
 3. **启用 GitHub Pages**
-   - Settings → Pages → Source 选择 "GitHub Actions"
+   - Settings → Pages → Source 选择 “GitHub Actions”。
 
 Workflow 文件 `.github/workflows/daily_watch.yml` 中的关键命令：
 ```yaml
-- run: python -m src.cli watch --rss --report --top 100
+- run: python -m src.cli watch --rss --top 100
 ```
-可根据需求添加或修改参数。
+可根据需求添加 `--report` 等选项。
 
 Workflow 的触发条件：
-- 每天 **UTC 06:00** 定时运行（北京时间 14:00）
+- 每天 **UTC 06:00** 定时运行
 - 当 `main` 分支有新的 push
 - 手动 `workflow_dispatch`
 
@@ -59,24 +58,17 @@ Workflow 的触发条件：
    ```bash
    git clone <your-repo-url>
    cd ZotWatcher
-   
-   # 使用 conda/mamba
-   conda create -n ZotWatcher python=3.10
+   mamba env create -n ZotWatcher --file requirements.txt  # 或使用 pip 安装
    conda activate ZotWatcher
-   pip install -r requirements.txt
-   
-   # 或使用 venv
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
    ```
 
 2. **配置环境变量**
-   在仓库根目录创建 `.env` 文件（参考 `.env.example`），至少包含：
-   ```
-   ZOTERO_API_KEY=your_api_key
-   ZOTERO_USER_ID=your_user_id
-   ```
+   在仓库根目录创建 `.env` 或 GitHub Secrets，至少包含：
+   - `ZOTERO_API_KEY`：Zotero Web API 访问密钥
+   - `ZOTERO_USER_ID`：Zotero 用户 ID（数字）
+   可选：
+   - `ALTMETRIC_KEY`：用于获取 Altmetric 数据
+   - `OPENALEX_MAILTO`/`CROSSREF_MAILTO`：覆盖默认监测邮箱
 
 3. **本地运行**
    ```bash
@@ -89,37 +81,15 @@ Workflow 的触发条件：
 
 ## 目录结构
 ```
-ZotWatcher/
-├─ .github/
-│  └─ workflows/
-│     └─ daily_watch.yml    # GitHub Actions 工作流
-├─ src/
-│  ├─ __init__.py
-│  ├─ cli.py                # 命令行接口
-│  ├─ profile.py            # 用户画像构建
-│  ├─ watcher.py            # 文献监测
-│  └─ utils.py              # 工具函数
-├─ config/
-│  ├─ zotero.yaml           # Zotero API 配置
-│  ├─ sources.yaml          # 数据源配置
-│  └─ scoring.yaml          # 评分权重配置
-├─ data/                    # 画像数据（不纳入版本控制）
-│  ├─ profile.sqlite        # 用户画像数据库
-│  ├─ faiss.index           # 向量索引
-│  ├─ profile.json          # 画像统计信息
-│  └─ cache/                # 候选文章缓存
-├─ reports/                 # 生成的报告（不纳入版本控制）
-│  ├─ feed.xml              # RSS feed
-│  └─ index.html            # HTML 报告
-├─ .env.example             # 环境变量示例
-├─ .gitignore
-├─ requirements.txt         # Python 依赖
-├─ README.md
-└─ LICENSE
+├─ src/                   # 主流程模块
+├─ config/                # YAML 配置，含 API 及评分权重
+├─ data/                  # 画像/缓存/指标文件（不纳入版本控制）
+├─ reports/               # 生成的 RSS/HTML 输出
+└─ .github/workflows/     # GitHub Actions 配置
 ```
 
 ## 自定义配置
-- `config/zotero.yaml`：Zotero API 参数（`user_id` 可写 `${ZOTERO_USER_ID}`，将由 `.env`/Secrets 注入）。
+- `config/zotero.yaml`：Zotero API 参数（`user_id` 可写 `$ {ZOTERO_USER_ID}`，将由 `.env`/Secrets 注入）。
 - `config/sources.yaml`：各数据源开关、分类、窗口大小（默认 7 天）。
 - `config/scoring.yaml`：相似度、期刊质量等权重；并提供手动白名单支持。
 
@@ -127,7 +97,6 @@ ZotWatcher/
 - **缓存过旧**：候选列表默认缓存 12 小时，可删除 `data/cache/candidate_cache.json` 强制刷新。
 - **未找到热门期刊补抓**：确保已运行过 `profile --full` 生成 `data/profile.json`。
 - **推荐为空**：检查是否所有候选都超出 7 天窗口或预印本比例被限制；可调节 CLI 的 `--top`、`_filter_recent` 的天数或 `max_ratio`。
-- **导入错误**：确保使用 `python -m src.cli` 而非直接运行 `python src/cli.py`。
 
 ## 许可证
 本项目采用 [MIT License](LICENSE)。

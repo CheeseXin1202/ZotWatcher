@@ -80,8 +80,9 @@ class ProfileBuilder:
         """从 Zotero 获取条目"""
         try:
             # 获取配置
-            api_key = self.zotero_config.get("api_key")
-            user_id = self.zotero_config.get("user_id")
+            api_config = self.zotero_config.get("api", {})
+            api_key = api_config.get("api_key", "").strip() if api_config.get("api_key") else None
+            user_id = api_config.get("user_id", "").strip() if api_config.get("user_id") else None
             library_type = self.zotero_config.get("library_type", "user")
             
             if not api_key or not user_id:
@@ -93,7 +94,7 @@ class ProfileBuilder:
             
             # 获取条目
             items = []
-            limit = self.zotero_config.get("items_per_page", 100)
+            limit = api_config.get("page_size", 100)
             max_items = self.zotero_config.get("max_items", 0)
             
             logger.info(f"开始从 Zotero 获取条目...")

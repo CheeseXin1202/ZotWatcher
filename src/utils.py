@@ -44,7 +44,12 @@ def expand_env_vars(text: str) -> str:
     
     def replace_var(match):
         var_name = match.group(1)
-        return os.getenv(var_name, match.group(0))
+        value = os.getenv(var_name)
+        if value is None:
+            logger = logging.getLogger("ZotWatcher.utils")
+            logger.warning(f"环境变量 {var_name} 未设置")
+            return ""
+        return value
     
     return re.sub(r'\$\{(\w+)\}', replace_var, text)
 
