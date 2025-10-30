@@ -1,7 +1,9 @@
 """用户画像构建模块"""
 import logging
+import json
 from pathlib import Path
 from typing import List, Dict, Any
+from pyzotero import zotero
 
 logger = logging.getLogger("ZotWatcher.profile")
 
@@ -64,10 +66,85 @@ class ProfileBuilder:
     
     def _fetch_zotero_items(self, since=None) -> List[Dict[str, Any]]:
         """从 Zotero 获取条目"""
-        # TODO: 实现 Zotero API 调用
-        # 这里返回示例数据
-        logger.warning("_fetch_zotero_items 尚未实现，返回空列表")
-        return []
+        try:
+            # 获取配置
+            api_key = self.zotero_config.get("api_key")
+            user_id = self.zotero_config.get("user_id")
+            library_type = self.zotero_config.get("library_type", "user")
+            
+            if not api_key or not user_id:
+                logger.error("缺少 Zotero API 配置")
+                return []
+            
+            # 创建 Zotero 客户端
+            zot = zotero.Zotero(user_id, library_type, api_key)
+            
+            # 获取条目
+            items = []
+            limit = self.zotero_config.get("items_per_page", 100)
+            max_items = self.zotero_config.get("max_items", 0)
+            
+            logger.info(f"开始从 Zotero 获取条目...")
+            
+            # 分页获取
+            start = 0
+            while True:
+                batch = zot.items(limit=limit, start=start)
+                if not batch:
+                    break
+                
+                items.extend(batch)
+                start += len(batch)
+                logger.info(f"已获取 {len(items)} 个条目")
+                
+                # 检查是否达到最大数量
+                if max_items > 0 and len(items) >= max_items:
+                    items = items[:max_items]
+                    break
+                
+                # 如果返回的数量小于 limit，说明已经是最后一页
+                if len(batch) < limit:
+                    break
+            
+            # 过滤和处理条目
+            processed_items = []
+            for item in items:
+                # 只处理包含数据的条目
+                if 'data' not in item:
+                    continue
+                
+                data = item['data']
+                item_type = data.get('itemType', '')
+                
+                # 过滤掉非文献类型
+                if item_type in ['attachment', 'note']:
+                    continue
+                
+                # 提取关键信息
+                processed_item = {
+                    'key': item.get('key'),
+                    'version': item.get('version'),
+                    'itemType': item_type,
+                    'title': data.get('title', ''),
+                    'abstractNote': data.get('abstractNote', ''),
+                    'creators': data.get('creators', []),
+                    'date': data.get('date', ''),
+                    'publicationTitle': data.get('publicationTitle', ''),
+                    'DOI': data.get('DOI', ''),
+                    'url': data.get('url', ''),
+                    'tags': [tag.get('tag', '') for tag in data.get('tags', [])],
+                    'dateAdded': data.get('dateAdded', ''),
+                    'dateModified': data.get('dateModified', '')
+                }
+                
+                processed_items.append(processed_item)
+            
+            logger.info(f"成功处理 {len(processed_items)} 个有效条目")
+            return processed_items
+            
+        except Exception as e:
+            logger.error(f"从 Zotero 获取条目失败: {e}")
+            return []
     
     def _vectorize_items(self, items: List[Dict[str, Any]]) -> List:
         """向量化文章"""
