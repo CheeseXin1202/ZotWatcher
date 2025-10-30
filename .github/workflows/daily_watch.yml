@@ -36,6 +36,10 @@ jobs:
       run: |
         echo "year_month=$(date +'%Y%m')" >> $GITHUB_OUTPUT
     
+    - name: Create data directory
+      run: |
+        mkdir -p data
+    
     - name: Restore profile cache
       id: cache-profile
       uses: actions/cache@v3
@@ -45,6 +49,8 @@ jobs:
           data/faiss.index
           data/profile.json
         key: profile-${{ steps.cache-key.outputs.year_month }}
+        restore-keys: |
+          profile-
     
     - name: Build full profile (if cache miss or new month)
       if: steps.cache-profile.outputs.cache-hit != 'true'
