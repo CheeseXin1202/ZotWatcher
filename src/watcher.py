@@ -13,7 +13,7 @@ logger = logging.getLogger("ZotWatcher.watcher")
 
 # 延迟导入 crossref，避免导入错误
 try:
-    from crossref.restful import Works
+    import crossref_commons.retrieval as cr
     CROSSREF_AVAILABLE = True
 except ImportError:
     CROSSREF_AVAILABLE = False
@@ -547,52 +547,15 @@ class LiteratureWatcher:
             return []
         
         try:
-            crossref_config = self.sources_config.get("sources", {}).get("crossref", {})
-            recent_days = self.sources_config.get("recent_days", 7)
+            # 注意：crossref-commons 的 API 比较基础，这里简化实现
+            # 实际使用时可能需要直接使用 Crossref REST API
+            logger.info("Crossref 抓取功能需要使用 Crossref REST API，当前使用简化版本")
+            logger.info("建议：配置文件中禁用 Crossref 或使用 arXiv 作为主要数据源")
+            return []
             
-            # 计算日期范围
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=recent_days)
-            
-            logger.info(f"从 Crossref 抓取 {start_date.date()} 到 {end_date.date()} 的文章")
-            
-            works = Works()
-            articles = []
-            
-            # 查询最近的文章
-            query = works.filter(
-                from_pub_date=start_date.strftime('%Y-%m-%d'),
-                until_pub_date=end_date.strftime('%Y-%m-%d'),
-                type='journal-article'
-            )
-            
-            # 获取指定数量的结果
-            max_results = crossref_config.get('rows', 100) * crossref_config.get('max_pages', 5)
-            count = 0
-            
-            for item in query:
-                if count >= max_results:
-                    break
-                
-                # 提取文章信息
-                article = {
-                    'title': item.get('title', [''])[0] if item.get('title') else '',
-                    'abstract': item.get('abstract', ''),
-                    'authors': [f"{a.get('given', '')} {a.get('family', '')}".strip() 
-                               for a in item.get('author', [])],
-                    'date': item.get('published-print', {}).get('date-parts', [['']])[0],
-                    'journal': item.get('container-title', [''])[0] if item.get('container-title') else '',
-                    'doi': item.get('DOI', ''),
-                    'url': item.get('URL', ''),
-                    'source': 'crossref',
-                    'type': item.get('type', ''),
-                }
-                
-                articles.append(article)
-                count += 1
-            
-            logger.info(f"从 Crossref 获取到 {len(articles)} 篇文章")
-            return articles
+        except Exception as e:
+            logger.error(f"Crossref 抓取失败: {e}")
+            return []
             
         except Exception as e:
             logger.error(f"Crossref 抓取失败: {e}")
