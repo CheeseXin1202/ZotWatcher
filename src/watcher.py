@@ -79,16 +79,18 @@ class LiteratureWatcher:
         
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # TODO: 使用 feedgen 生成 RSS
-        rss_content = """<?xml version="1.0" encoding="UTF-8"?>
+        # 生成 RSS feed
+        current_date = datetime.now().strftime("%a, %d %b %Y %H:%M:%S +0000")
+        
+        rss_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
     <title>ZotWatcher Recommendations</title>
     <description>Personalized academic literature recommendations</description>
     <link>https://github.com/yourusername/ZotWatcher</link>
-    <lastBuildDate>{}</lastBuildDate>
+    <lastBuildDate>{current_date}</lastBuildDate>
   </channel>
-</rss>""".format(datetime.now().strftime("%a, %d %b %Y %H:%M:%S +0000"))
+</rss>"""
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(rss_content)
@@ -101,24 +103,27 @@ class LiteratureWatcher:
         
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # TODO: 生成美观的 HTML 报告
-        html_content = """<!DOCTYPE html>
+        # 生成 HTML 报告
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        article_count = len(articles)
+        
+        html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>ZotWatcher Recommendations</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        h1 { color: #333; }
-        .article { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; }
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        h1 {{ color: #333; }}
+        .article {{ margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; }}
     </style>
 </head>
 <body>
     <h1>ZotWatcher 推荐文章</h1>
-    <p>生成时间: {}</p>
-    <p>共 {} 篇文章</p>
+    <p>生成时间: {current_time}</p>
+    <p>共 {article_count} 篇文章</p>
 </body>
-</html>""".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(articles))
+</html>"""
         
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
