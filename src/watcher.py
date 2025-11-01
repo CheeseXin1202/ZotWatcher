@@ -68,43 +68,43 @@ class LiteratureWatcher:
     def fetch_candidates(self) -> List[Dict[str, Any]]:
         """抓取候选文章"""
         logger.info("开始抓取候选文章")
-        
-        candidates = []
-        
+
+        candidates: List[Dict[str, Any]] = []
+
         # 1. Crossref
-        if self.sources_config.get("sources", {}).get("crossref", {}).get("enabled"):
+        if self.sources_config.get("crossref", {}).get("enabled"):
             crossref_articles = self._fetch_crossref()
             candidates.extend(crossref_articles)
             logger.info(f"Crossref: {len(crossref_articles)} 篇")
-        
+
         # 2. arXiv
-        if self.sources_config.get("sources", {}).get("arxiv", {}).get("enabled"):
+        if self.sources_config.get("arxiv", {}).get("enabled"):
             arxiv_articles = self._fetch_arxiv()
             candidates.extend(arxiv_articles)
             logger.info(f"arXiv: {len(arxiv_articles)} 篇")
-        
+
         # 3. bioRxiv
-        if self.sources_config.get("sources", {}).get("biorxiv", {}).get("enabled"):
+        if self.sources_config.get("biorxiv", {}).get("enabled"):
             biorxiv_articles = self._fetch_biorxiv()
             candidates.extend(biorxiv_articles)
             logger.info(f"bioRxiv: {len(biorxiv_articles)} 篇")
-        
+
         # 4. medRxiv
-        if self.sources_config.get("sources", {}).get("medrxiv", {}).get("enabled"):
+        if self.sources_config.get("medrxiv", {}).get("enabled"):
             medrxiv_articles = self._fetch_medrxiv()
             candidates.extend(medrxiv_articles)
             logger.info(f"medRxiv: {len(medrxiv_articles)} 篇")
-        
+
         # 5. 热门期刊精准抓取
         if self.sources_config.get("top_journals", {}).get("enabled"):
             journal_articles = self._fetch_top_journals()
             candidates.extend(journal_articles)
             logger.info(f"热门期刊: {len(journal_articles)} 篇")
-        
+
         # 去重
         candidates = self._deduplicate(candidates)
         logger.info(f"去重后: {len(candidates)} 篇")
-        
+
         return candidates
     
     def score_and_rank(self, candidates: List[Dict[str, Any]], top_n: int = 100) -> List[Dict[str, Any]]:
@@ -564,10 +564,10 @@ class LiteratureWatcher:
     def _fetch_arxiv(self) -> List[Dict[str, Any]]:
         """抓取 arXiv"""
         try:
-            arxiv_config = self.sources_config.get("sources", {}).get("arxiv", {})
+            arxiv_config = self.sources_config.get("arxiv", {})
             categories = arxiv_config.get('categories', [])
             max_results = arxiv_config.get('max_results', 200)
-            recent_days = self.sources_config.get("recent_days", 7)
+            recent_days = self.sources_config.get("recent_days") or self.sources_config.get("window_days", 7)
             
             logger.info(f"从 arXiv 抓取最近 {recent_days} 天的文章")
             
@@ -646,8 +646,8 @@ class LiteratureWatcher:
         unique_articles = []
         
         for article in articles:
-            doi = article.get('doi', '').strip().lower()
-            title = article.get('title', '').strip().lower()
+            doi = (article.get('doi') or '').strip().lower()
+            title = (article.get('title') or '').strip().lower()
             
             # 优先使用 DOI 去重
             if doi and doi in seen_dois:
