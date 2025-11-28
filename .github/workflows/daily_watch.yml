@@ -94,7 +94,7 @@ jobs:
         OPENALEX_MAILTO: ${{ secrets.OPENALEX_MAILTO }}
         CROSSREF_MAILTO: ${{ secrets.CROSSREF_MAILTO }}
       run: |
-        python -m src.cli watch --rss --report --top 100
+        python -m src.cli watch --rss --report --top 20
     
     - name: Upload Pages artifact
       uses: actions/upload-pages-artifact@v3
